@@ -1,0 +1,102 @@
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { QuizAnswer, QuizAnswerDocument } from '../schemas/quiz-answer.schema';
+
+type PopulatedUser = {
+  _id: Types.ObjectId;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+type FastestCorrectParticipant = Omit<QuizAnswer, 'userId'> & {
+  userId: PopulatedUser;
+};
+
+@Injectable()
+export class QuizAnswerRepository {
+  constructor(
+    @InjectModel(QuizAnswer.name)
+    private readonly quizAnswerModel: Model<QuizAnswerDocument>,
+  ) {}
+
+  async findParticipantAnswer(
+    quizId: Types.ObjectId,
+    roundNumber: number,
+    userId: Types.ObjectId,
+    questionId: Types.ObjectId,
+  ): Promise<QuizAnswerDocument | null> {
+    const response = await this.quizAnswerModel.findOne({
+      quizId,
+      roundNumber,
+      userId,
+      questionId,
+    });
+
+    return response;
+  }
+  // async getFastestCorrectParticipant(
+  //   quizId: string,
+  //   roomId: string,
+  //   questionId: string,
+  // ): Promise<FastestCorrectParticipant | null> {
+  //   const quiz = new Types.ObjectId(quizId);
+  //   const question = new Types.ObjectId(questionId);
+  //   const room = new Types.ObjectId(roomId);
+
+  //   const response = await this.quizAnswerModel
+  //     .findOne({
+  //       quizId: quiz,
+  //       roomId: room,
+  //       questionId: question,
+  //       isFirstCorrectAnswer: true,
+  //     })
+  //     .populate('userId', 'firstName lastName email')
+  //     .lean()
+  //     .exec();
+
+  //   return response;
+  // }
+
+  async getFastestCorrectParticipant(
+    quizId: string,
+    roomId: string,
+    questionId: string,
+  ): Promise<FastestCorrectParticipant | null> {
+    const quiz = new Types.ObjectId(quizId);
+    const question = new Types.ObjectId(questionId);
+    const room = new Types.ObjectId(roomId);
+
+    const response = await this.quizAnswerModel
+      .findOne({
+        quizId: quiz,
+        roomId: room,
+        questionId: question,
+        isFirstCorrectAnswer: true,
+      })
+      .populate<{ userId: PopulatedUser }>('userId', 'firstName lastName email')
+      .lean()
+      .exec();
+
+    return response;
+  }
+
+  async createParticipantQuizAnswer(payload: {
+    quizId: Types.ObjectId;
+    roomId: Types.ObjectId;
+    userId: Types.ObjectId;
+    questionId: Types.ObjectId;
+    roundNumber: number;
+    selectedAnswerId: Types.ObjectId;
+    isCorrect: boolean;
+    isFirstCorrectAnswer: boolean;
+    scoreAwarded: number;
+    timeTakenInSeconds: number;
+    answeredAt: Date;
+  }): Promise<QuizAnswerDocument | null> {
+    const response = await new this.quizAnswerModel(payload).save();
+
+    return response;
+  }
+}

@@ -1,0 +1,71 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Types } from 'mongoose';
+
+export type WithdrawalDocument = Withdrawal & Document;
+
+export enum WithdrawalStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+  REVERSAL_PENDING = 'REVERSAL_PENDING',
+  REVERSED_REFUNDED = 'REVERSED_REFUNDED',
+  RECONCILIATION_REQUIRED = 'RECONCILIATION_REQUIRED',
+}
+
+export type UpdateWithdrawalStatusPayload = {
+  status: WithdrawalStatus;
+  providerReference?: string;
+  metadata?: Record<string, any>;
+  failureReason?: string;
+  paidAt?: Date;
+};
+
+@Schema({ timestamps: true })
+export class Withdrawal {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId!: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Wallet', required: true })
+  walletId!: Types.ObjectId;
+
+  @Prop({ required: true })
+  amountInKobo!: number; // store in kobo
+
+  @Prop({ required: true, unique: true })
+  reference!: string;
+
+  @Prop({ required: true, unique: true })
+  idempotencyKey!: string;
+
+  @Prop()
+  providerReference!: string;
+
+  @Prop({ required: true })
+  recipientCode!: string;
+
+  @Prop({
+    type: String,
+    enum: WithdrawalStatus,
+    default: WithdrawalStatus.PENDING,
+  })
+  status!: WithdrawalStatus;
+
+  @Prop({ required: true })
+  destinationAccountNumber!: string;
+
+  @Prop({ required: true })
+  destinationAccountName!: string;
+
+  @Prop({ type: Object })
+  metadata?: Record<string, any>;
+
+  @Prop()
+  failureReason?: string;
+
+  @Prop()
+  paidAt?: Date;
+}
+
+export const WithdrawalSchema = SchemaFactory.createForClass(Withdrawal);
+WithdrawalSchema.index({ userId: 1, idempotencyKey: 1 }, { unique: true });
