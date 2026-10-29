@@ -74,7 +74,7 @@ async function bootstrap() {
 
   const serverUrl =
     process.env.NODE_ENV === 'production'
-      ? 'https://mypastquestionsapp.onrender.com'
+      ? 'https://myandyemi-qanda-backend.onrender.com'
       : `http://localhost:${port}`;
 
   // Enable Swagger Docs
