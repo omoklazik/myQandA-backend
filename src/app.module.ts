@@ -97,29 +97,78 @@ import { WithdrawalsModule } from './modules/withdrawals/withdrawals.module';
     //   },
     // }),
 
+    // BullModule.forRootAsync({
+    //   inject: [ConfigService],
+    //   useFactory: (configService: ConfigService) => {
+    //     const redisUrl = configService.get<string>('REDIS_URL');
+
+    //     if (redisUrl) {
+    //       const redisArray = redisUrl.split(':');
+
+    //       const url = new URL(redisUrl);
+    //       return {
+    //         redis: {
+    //           host: url.hostname,
+    //           port: Number(url.port),
+    //           maxRetriesPerRequest: null,
+    //         },
+    //       };
+    //     }
+
+    //     return {
+    //       redis: {
+    //         host: '127.0.0.1',
+    //         port: 6379,
+    //       },
+    //     };
+    //   },
+    // }),
+
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
 
-        if (redisUrl) {
-          const redisArray = redisUrl.split(':');
+        console.log('redisUrl:', redisUrl);
 
-          const url = new URL(redisUrl);
+        if (!redisUrl) {
+          if (process.env.NODE_ENV === 'production') {
+            throw new Error('REDIS_URL is required in production');
+          }
+
+          console.log('[REDIS] Using local Redis');
+
           return {
             redis: {
-              host: url.hostname,
-              port: Number(url.port),
-              maxRetriesPerRequest: null,
+              host: '127.0.0.1',
+              port: 6379,
             },
           };
         }
 
+        const url = new URL(redisUrl);
+        const isTls = url.protocol === 'rediss:';
+
+        const redisConfig = {
+          host: url.hostname,
+          port: Number(url.port || (isTls ? 6380 : 6379)),
+          username: url.username ? decodeURIComponent(url.username) : undefined,
+          password: url.password ? decodeURIComponent(url.password) : undefined,
+          db:
+            url.pathname.length > 1 ? Number(url.pathname.slice(1)) : undefined,
+          ...(isTls ? { tls: {} } : {}),
+        };
+
+        console.log('[REDIS] Configuring Redis connection', {
+          host: redisConfig.host,
+          port: redisConfig.port,
+          tls: isTls,
+          hasUsername: Boolean(redisConfig.username),
+          hasPassword: Boolean(redisConfig.password),
+        });
+
         return {
-          redis: {
-            host: '127.0.0.1',
-            port: 6379,
-          },
+          redis: redisConfig,
         };
       },
     }),

@@ -13,17 +13,61 @@ export class MailService {
   constructor(@InjectQueue('mail') private mailQueue: Queue<SendEmailJob>) {}
   private app_name = 'Past Question App';
 
+  // private async sendMail(data: SendEmailJob) {
+  //   const response = await this.mailQueue.add('send_email', data, {
+  //     attempts: 3,
+  //     backoff: { type: 'exponential', delay: 5000 },
+  //     removeOnComplete: true,
+  //     removeOnFail: false,
+  //   });
+
+  //   console.log('sendMail response:', response);
+
+  //   return { message: `Email job added to queue for ${data.to}` };
+  // }
+
   private async sendMail(data: SendEmailJob) {
-    const response = await this.mailQueue.add('send_email', data, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 5000 },
-      removeOnComplete: true,
-      removeOnFail: false,
-    });
+    const startedAt = Date.now();
 
-    console.log('sendMail response:', response);
+    console.log('[MAIL QUEUE] Checking Redis readiness');
 
-    return { message: `Email job added to queue for ${data.to}` };
+    try {
+      await this.mailQueue.isReady();
+
+      console.log('[MAIL QUEUE] Redis connection ready', {
+        durationMs: Date.now() - startedAt,
+      });
+
+      console.log('[MAIL QUEUE] Adding email job', {
+        recipient: data.to,
+        jobName: 'send_email',
+      });
+
+      const response = await this.mailQueue.add('send_email', data, {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: true,
+        removeOnFail: false,
+      });
+
+      console.log('[MAIL QUEUE] Email job successfully added', {
+        jobId: response.id,
+        durationMs: Date.now() - startedAt,
+      });
+
+      return {
+        message: `Email job added to queue for ${data.to}`,
+      };
+    } catch (error) {
+      console.error('[MAIL QUEUE] Failed to add email job', {
+        durationMs: Date.now() - startedAt,
+        errorName: error instanceof Error ? error.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
+    }
   }
 
   async sendVerificationEmail(to: string, first_name: string, token: string) {

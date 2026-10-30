@@ -121,6 +121,11 @@ export class AuthService {
         durationMs: Date.now() - mailStartedAt,
         success: true,
       });
+
+      console.log('[MAIL] sendVerificationEmail returned', {
+        durationMs: Date.now() - mailStartedAt,
+        mailResponse,
+      });
     } catch (error) {
       console.error('[MAIL] Verification email request failed', {
         durationMs: Date.now() - mailStartedAt,
