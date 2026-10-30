@@ -79,13 +79,76 @@ export class MailProcessor {
       const template = this.getTemplate(templateName);
       const html = ejs.render(template, templateData);
 
+      // if (this.isProduction && this.resend) {
+      //   const response = await this.resend.emails.send({
+      //     from: this.configService.getOrThrow<string>('RESEND_FROM'),
+      //     to,
+      //     subject,
+      //     html,
+      //   });
+      // }
+
       if (this.isProduction && this.resend) {
-        const response = await this.resend.emails.send({
-          from: this.configService.getOrThrow<string>('RESEND_FROM'),
+        const timeoutMs = 15_000;
+
+        console.log('[RESEND] Sending email', {
           to,
           subject,
-          html,
+          timeoutMs,
+          timestamp: new Date().toISOString(),
         });
+
+        const startedAt = Date.now();
+
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+        try {
+          const response = await Promise.race([
+            this.resend.emails.send({
+              from: this.configService.getOrThrow<string>('RESEND_FROM'),
+              to,
+              subject,
+              html,
+            }),
+
+            new Promise<never>((_, reject) => {
+              timeoutId = setTimeout(() => {
+                reject(
+                  new Error(
+                    `Resend email request timed out after ${timeoutMs}ms`,
+                  ),
+                );
+              }, timeoutMs);
+            }),
+          ]);
+
+          if (response.error) {
+            console.error('[RESEND] Email API returned an error', {
+              durationMs: Date.now() - startedAt,
+              error: response.error,
+            });
+
+            throw new Error(`Resend API error: ${response.error.message}`);
+          }
+
+          console.log('[RESEND] Email sent successfully', {
+            durationMs: Date.now() - startedAt,
+            emailId: response.data?.id,
+          });
+
+          return response;
+        } catch (error) {
+          console.error('[RESEND] Email request failed', {
+            durationMs: Date.now() - startedAt,
+            error: error instanceof Error ? error.message : String(error),
+          });
+
+          throw error;
+        } finally {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+        }
       } else if (this.transporter) {
         const info = await this.transporter.sendMail({
           from: `<${this.configService.get<string>('SMTP_FROM')}>`,

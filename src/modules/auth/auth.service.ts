@@ -95,12 +95,42 @@ export class AuthService {
       console.log('newWallet:', newWallet);
     }
 
-    const mailResponse = await this.mailService.sendVerificationEmail(
-      newUser.email,
-      newUser.firstName,
-      userToken.token,
-    );
-    console.log('mailResponse:', mailResponse);
+    // const mailResponse = await this.mailService.sendVerificationEmail(
+    //   newUser.email,
+    //   newUser.firstName,
+    //   userToken.token,
+    // );
+    // console.log('mailResponse:', mailResponse);
+
+    console.log('[MAIL] Starting verification email request', {
+      email: newUser.email,
+      userId: newUser._id.toString(),
+      timestamp: new Date().toISOString(),
+    });
+
+    const mailStartedAt = Date.now();
+
+    try {
+      const mailResponse = await this.mailService.sendVerificationEmail(
+        newUser.email,
+        newUser.firstName,
+        userToken.token,
+      );
+
+      console.log('[MAIL] Verification email request completed', {
+        durationMs: Date.now() - mailStartedAt,
+        success: true,
+      });
+    } catch (error) {
+      console.error('[MAIL] Verification email request failed', {
+        durationMs: Date.now() - mailStartedAt,
+        errorName: error instanceof Error ? error.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
+    }
 
     return {
       data: null,
