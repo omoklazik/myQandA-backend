@@ -81,14 +81,18 @@ export class AuthService {
     };
     const userToken = await this.tokensRepository.create(input);
 
+    console.log('userToken:', userToken);
+
     const findWallet = await this.walletsRepository.findWalletByUserId(
       newUser._id.toString(),
     );
+    console.log('findWallet:', findWallet);
 
     if (!findWallet) {
       const newWallet = await this.walletsRepository.createWallet(
         newUser._id.toString(),
       );
+      console.log('newWallet:', newWallet);
     }
 
     const mailResponse = await this.mailService.sendVerificationEmail(
@@ -96,6 +100,7 @@ export class AuthService {
       newUser.firstName,
       userToken.token,
     );
+    console.log('mailResponse:', mailResponse);
 
     return {
       data: null,

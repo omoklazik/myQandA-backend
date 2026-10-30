@@ -148,6 +148,8 @@ export class UsersService {
     const response = await this.usersRepository.findAllWithPagination(
       queryWithPaginationDto,
     );
+
+    console.log('All Users:', response);
     return response;
   }
 

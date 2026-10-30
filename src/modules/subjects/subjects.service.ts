@@ -50,7 +50,11 @@ export class SubjectsService {
   }
 
   async getAllSubjects(queryWithPaginationDto: QueryWithPaginationDto) {
-    return this.subjectsRepository.findAll(queryWithPaginationDto);
+    const response = await this.subjectsRepository.findAll(
+      queryWithPaginationDto,
+    );
+
+    return response;
   }
   async getAllSubjectsPerCategory(
     plan: PlanCode,
