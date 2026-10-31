@@ -129,8 +129,6 @@ import { WithdrawalsModule } from './modules/withdrawals/withdrawals.module';
       useFactory: (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
 
-        console.log('redisUrl:', redisUrl);
-
         if (!redisUrl) {
           if (process.env.NODE_ENV === 'production') {
             throw new Error('REDIS_URL is required in production');
@@ -158,14 +156,6 @@ import { WithdrawalsModule } from './modules/withdrawals/withdrawals.module';
             url.pathname.length > 1 ? Number(url.pathname.slice(1)) : undefined,
           ...(isTls ? { tls: {} } : {}),
         };
-
-        console.log('[REDIS] Configuring Redis connection', {
-          host: redisConfig.host,
-          port: redisConfig.port,
-          tls: isTls,
-          hasUsername: Boolean(redisConfig.username),
-          hasPassword: Boolean(redisConfig.password),
-        });
 
         return {
           redis: redisConfig,

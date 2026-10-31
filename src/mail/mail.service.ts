@@ -29,30 +29,14 @@ export class MailService {
   private async sendMail(data: SendEmailJob) {
     const startedAt = Date.now();
 
-    console.log('[MAIL QUEUE] Checking Redis readiness');
-
     try {
       await this.mailQueue.isReady();
-
-      console.log('[MAIL QUEUE] Redis connection ready', {
-        durationMs: Date.now() - startedAt,
-      });
-
-      console.log('[MAIL QUEUE] Adding email job', {
-        recipient: data.to,
-        jobName: 'send_email',
-      });
 
       const response = await this.mailQueue.add('send_email', data, {
         attempts: 3,
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: true,
         removeOnFail: false,
-      });
-
-      console.log('[MAIL QUEUE] Email job successfully added', {
-        jobId: response.id,
-        durationMs: Date.now() - startedAt,
       });
 
       return {
@@ -78,7 +62,6 @@ export class MailService {
       templateData: { first_name, token, app_name: this.app_name },
     });
 
-    console.log('sendVerificationEmail response:', response);
     return response;
   }
 

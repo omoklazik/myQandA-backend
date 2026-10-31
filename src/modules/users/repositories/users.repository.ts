@@ -92,7 +92,6 @@ export class UsersRepository {
     let exists = true;
     let referralChain: { userId: Types.ObjectId; level: number }[] = [];
 
-    console.log('I want to create new user...');
     do {
       const code = generateRefCode();
       refCode = code;
@@ -139,8 +138,6 @@ export class UsersRepository {
       referralChain: referralChain,
     });
     await user.save();
-
-    console.log('Users repo:', user);
 
     return user;
   }

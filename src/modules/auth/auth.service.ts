@@ -102,12 +102,6 @@ export class AuthService {
     // );
     // console.log('mailResponse:', mailResponse);
 
-    console.log('[MAIL] Starting verification email request', {
-      email: newUser.email,
-      userId: newUser._id.toString(),
-      timestamp: new Date().toISOString(),
-    });
-
     const mailStartedAt = Date.now();
 
     try {
@@ -116,16 +110,6 @@ export class AuthService {
         newUser.firstName,
         userToken.token,
       );
-
-      console.log('[MAIL] Verification email request completed', {
-        durationMs: Date.now() - mailStartedAt,
-        success: true,
-      });
-
-      console.log('[MAIL] sendVerificationEmail returned', {
-        durationMs: Date.now() - mailStartedAt,
-        mailResponse,
-      });
     } catch (error) {
       console.error('[MAIL] Verification email request failed', {
         durationMs: Date.now() - mailStartedAt,
